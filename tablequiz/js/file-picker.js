@@ -1,19 +1,10 @@
 "use strict";
 
-// Maps questions to answer arrays
-var answersMap = {};
-var answerTextAreasMap = {};
+// The first index is the question # (zero-indexed), the second index 
+// is the nth answer column corresponding to that question
+var answersArray = [];
 
-/*
-window.onbeforeunload = function() {
-    if(isEmptyObject(answersMap)) {
-        return "Are you sure you want to leave? Your current quiz will be lost!";
-    }
-    return;
-}
-*/
-
-function filePicked(files) {
+function filePicked(files) {    
     var file = files[0], 
         reader = new FileReader();
     
@@ -22,15 +13,20 @@ function filePicked(files) {
         return;
     }
     
-    console.log("Uploaded " + file.name + ", size: " + (file.size / 1024) + "kb");
+    //console.log("Uploaded " + file.name + ", size: " + (file.size / 1024) + "kb");
     reader.readAsText(file, "UTF-8");
     
     reader.onload = function (e) {
-        $("#file-upload-indicator").html(file.name).show();
-        buildTable(e.target.result);
+        $("#file-display").html(file.name).show();
+        $("#score-display").empty();
+        
+        // Sanitize the csv input by converting all whitespace to a single space, and trimming
+        var csvText = e.target.result.trim();
+        csvText = csvText.replace(/\s\s+/g, ' ');
+        buildTable(csvText);
     };
     reader.onerror = function (e) {
-        $("#file-upload-indicator").html(e.target.result).show()
+        $("#file-display").html(e.target.result).show();
     };
 }
 
@@ -66,17 +62,23 @@ function buildTable(csvText) {
     
     for (i = 0; i < lines.length - 1; i++) {
         // array of cells for this line - [0] is the question, rest are answers
-        var line = lines[i].slice(0,-1).split(",");
+        var line = lines[i].split(",");
         
         // Map the question to the array of answers
-        answersMap[line[0]] = line.slice(1, line.length);
+        answersArray[i] = line.slice(1, line.length);
         
         // The row starts off with the question
         var row = "<tr><td>" + line[0] + "</td>";
         var j;
         // Then we add one text box cell per answer
         for(j = 1; j < line.length; j++) {
-            row += "<td><textarea class=\"answer-textarea\"></textarea></td>";
+            if(line[j] && line[j].length !== 0) {
+                // The ID corresponds to the index of the expected answer in answersArray
+                // answersArray[1][1] will have id 1_1
+                var id = i + "_" + (j-1);
+                row += "<td><textarea class=\"answer-textarea\" id=\"" + id + "\">" + 
+                    "</textarea>&nbsp;</td>";
+            }
         }
         row += "</tr>";
         output.push(row);
@@ -104,19 +106,4 @@ function shuffleArray(array) {
         array[j] = temp;
     }
     return array;
-}
-
-function validate() {
-    var tableContents = {};
-    $("#table-div table tr").each(function() {
-        var row = [];
-        var tableData = $(this).find('td');
-        if(tableData.length > 0) {
-            // Slice to ignore the question (first td)
-            tableData.slice(1, tableData.length).each(function() {
-                row.push($(this).text());
-            });
-            
-        }
-    });
 }
