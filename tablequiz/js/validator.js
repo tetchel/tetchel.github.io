@@ -92,7 +92,7 @@ function isCorrectAnswer(actual, expected) {
             // the first element is the shortest word
             .pop().length;
     
-    return actual.length >= shortestWordLength.length && 
+    return actual.length >= shortestWordLength && 
         expected.indexOf(actual) != -1;    
 }
 
